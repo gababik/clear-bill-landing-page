@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,11 +12,12 @@ import { cn } from "@/lib/utils"
 import { ConfettiBurst } from "@/components/confetti-burst"
 
 export function Uploader() {
-  const router = useRouter()
   const [isDragging, setIsDragging] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [analysis, setAnalysis] = useState<string | null>(null)
+
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const [formData, setFormData] = useState({
@@ -49,6 +49,7 @@ export function Uploader() {
     if (droppedFile && validateFile(droppedFile)) {
       setFile(droppedFile)
       setErrors((prev) => ({ ...prev, file: "" }))
+      setAnalysis(null)
     }
   }, [])
 
@@ -57,12 +58,13 @@ export function Uploader() {
     if (selectedFile && validateFile(selectedFile)) {
       setFile(selectedFile)
       setErrors((prev) => ({ ...prev, file: "" }))
+      setAnalysis(null)
     }
   }
 
   const validateFile = (file: File): boolean => {
     const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"]
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    const maxSize = 10 * 1024 * 1024 //10MB limit for the demo
 
     if (!validTypes.includes(file.type)) {
       setErrors((prev) => ({ ...prev, file: "Please upload a PDF, JPG, or PNG file" }))
@@ -122,20 +124,59 @@ export function Uploader() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    setAnalysis(null)
+    setShowConfetti(false)
+    setErrors((prev) => ({ ...prev, submit: "" }))
+
     if (!validateForm()) {
+      return
+    }
+
+    if (!file) {
+      //Should be caught by validateForm, but TS safety
+      setErrors((prev) => ({ ...prev, file: "Please upload your medical bill" }))
       return
     }
 
     setIsUploading(true)
 
-    // Simulate upload
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const data = new FormData()
+      data.append("file", file)
+      data.append("name", formData.fullName)
+      data.append("email", formData.email)
+      data.append("phone", formData.phone)
+      data.append("providerName", formData.providerName)
+      data.append("billDate", formData.billDate)
+      data.append("totalAmount", formData.totalAmount)
+      data.append("authorizationConsent", String(formData.authorizationConsent))
+      data.append("electronicConsent", String(formData.electronicConsent))
 
-    setShowConfetti(true)
+      const res = await fetch("/api/bills", {
+        method: "POST",
+        body: data,
+      })
 
-    setTimeout(() => {
-      router.push("/dashboard")
-    }, 1000)
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.error || "Failed to analyze bill. Please try again.")
+      }
+
+      const json = await res.json()
+
+      setAnalysis(
+        json.summary || "We analyzed your bill, but no summary was returned. A human reviewer can look deeper."
+      )
+      setShowConfetti(true)
+    } catch (err: unknown) {
+      console.error(err)
+      setErrors((prev) => ({
+        ...prev,
+        submit: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+      }))
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const updateFormData = (field: string, value: string | boolean) => {
@@ -178,7 +219,9 @@ export function Uploader() {
                 </div>
                 <div>
                   <p className="font-medium mb-1">Drag and drop your bill here, or click to browse</p>
-                  <p className="text-sm text-muted-foreground">PDF, JPG, or PNG • Max 10MB • Phone photos work great</p>
+                  <p className="text-sm text-muted-foreground">
+                    PDF, JPG, or PNG • Max 10MB • Phone photos work great
+                  </p>
                 </div>
                 <Input
                   type="file"
@@ -284,7 +327,9 @@ export function Uploader() {
               <Label htmlFor="authorization" className="text-sm font-normal leading-relaxed cursor-pointer">
                 I authorize ClearBill to review my bill and communicate with the provider on my behalf. *
               </Label>
-              {errors.authorizationConsent && <p className="text-sm text-destructive">{errors.authorizationConsent}</p>}
+              {errors.authorizationConsent && (
+                <p className="text-sm text-destructive">{errors.authorizationConsent}</p>
+              )}
             </div>
           </div>
 
@@ -299,7 +344,9 @@ export function Uploader() {
               <Label htmlFor="electronic" className="text-sm font-normal leading-relaxed cursor-pointer">
                 I consent to electronic communications regarding my bill review. *
               </Label>
-              {errors.electronicConsent && <p className="text-sm text-destructive">{errors.electronicConsent}</p>}
+              {errors.electronicConsent && (
+                <p className="text-sm text-destructive">{errors.electronicConsent}</p>
+              )}
             </div>
           </div>
         </div>
@@ -314,12 +361,31 @@ export function Uploader() {
           {isUploading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              We're extracting your itemized charges...
+              We&apos;re extracting your itemized charges...
             </>
           ) : (
             "Submit Bill Securely"
           )}
         </Button>
+
+        {/* Submit-level error */}
+        {errors.submit && (
+          <p className="text-sm text-destructive mt-2">
+            {errors.submit}
+          </p>
+        )}
+
+        {/* AI Analysis Result */}
+        {analysis && (
+          <div className="mt-6 rounded-lg border bg-card px-4 py-4 text-sm leading-relaxed">
+            <h3 className="mb-2 text-base font-semibold">Initial AI Review</h3>
+            <p className="whitespace-pre-wrap">{analysis}</p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              This is an automated first pass. A certified human biller can refine this and help
+              you negotiate with your provider.
+            </p>
+          </div>
+        )}
       </form>
 
       <ConfettiBurst trigger={showConfetti} />
