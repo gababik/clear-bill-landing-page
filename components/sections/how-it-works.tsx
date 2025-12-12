@@ -1,3 +1,4 @@
+"use client"
 import { StepCard } from "@/components/step-card"
 import { Upload, Search, MessageSquare, CheckCircle } from "lucide-react"
 

@@ -14,7 +14,7 @@ export function SavingsCalculator() {
 
   const billValue = Number.parseFloat(billAmount) || 0
   const estimatedSavings = billValue * (savingsPercent[0] / 100)
-  const ourFee = estimatedSavings * 0.1
+  const ourFee = estimatedSavings * 0.2
 
   useEffect(() => {
     const duration = 800
@@ -87,7 +87,7 @@ export function SavingsCalculator() {
             </span>
           </div>
           <div className="flex justify-between items-center p-4 bg-accent/10 rounded-xl">
-            <span className="text-sm font-semibold">Our Fee (10% of savings)</span>
+            <span className="text-sm font-semibold">Our Fee (20% of savings)</span>
             <span className="text-2xl font-bold text-accent">
               ${displayFee.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </span>
