@@ -2,7 +2,17 @@
 
 > Upload a bill. We audit every charge, fix errors, and negotiate savings. You only pay if we save you money.
 
-**Live:** [clear-bill-landing-page.vercel.app](https://clear-bill-landing-page.vercel.app) &nbsp;|&nbsp; **Stack:** Next.js · TypeScript · React · MongoDB · OpenAI · Vercel
+**Stack:** Next.js · TypeScript · React · MongoDB · OpenAI · Vercel &nbsp;|&nbsp; **Status:** Working prototype
+
+---
+
+## Preview
+
+| Landing Page | Upload Flow | Bill Dashboard |
+|---|---|---|
+| ![Landing](public/screenshots/landing.png) | ![Upload](public/screenshots/upload.png) | ![Dashboard](public/screenshots/dashboard.png) |
+
+> **To add screenshots:** Run `npm run dev`, screenshot each page, save to `public/screenshots/`.
 
 ---
 
