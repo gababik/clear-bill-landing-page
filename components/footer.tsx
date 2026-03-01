@@ -41,6 +41,17 @@ export function Footer() {
               </li>
             </ul>
           </div>
+
+          <div>
+            <h4 className="text-sm font-semibold mb-4">Team</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>George Babik</li>
+              <li>Javier Herrera Jr.</li>
+              <li>Vasan Insixiengmay</li>
+              <li>Kason Lau</li>
+              <li>Selina Wu</li>
+            </ul>
+          </div>
         </div>
 
         <div className="mt-8 pt-8 border-t">
